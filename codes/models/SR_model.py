@@ -1,5 +1,6 @@
 import logging
 from collections import OrderedDict
+import math
 
 import torch
 import torch.nn as nn
@@ -7,7 +8,7 @@ from torch.nn.parallel import DataParallel, DistributedDataParallel
 import models.networks as networks
 import models.lr_scheduler as lr_scheduler
 from .base_model import BaseModel
-from models.loss import CharbonnierLoss
+from models.loss import CharbonnierLoss, PerceptualLoss
 
 logger = logging.getLogger('base')
 
@@ -46,6 +47,22 @@ class SRModel(BaseModel):
             else:
                 raise NotImplementedError('Loss type [{:s}] is not recognized.'.format(loss_type))
             self.l_pix_w = train_opt['pixel_weight']
+            perceptual_loss = train_opt['perceptual_loss']
+            self.l_per_w = train_opt.get('perceptual_weight', 0)
+            if math.fabs(self.l_per_w) < 1e-6:
+                self.cri_per = None
+            else:
+                print(perceptual_loss)
+                feature_criterion = perceptual_loss['feature_criterion']
+                if feature_criterion == 'l2':
+                    criterion = nn.MSELoss().to(self.device)
+                else:
+                    raise NotImplementedError(
+                        'invalid feature_criterion {}'.format(feature_criterion))
+                self.cri_per = PerceptualLoss(perceptual_loss['type'],
+                                              perceptual_loss['model_path'],
+                                              perceptual_loss['feature_name'],
+                                              criterion).to(self.device)
 
             # optimizers
             wd_G = train_opt['weight_decay_G'] if train_opt['weight_decay_G'] else 0
@@ -90,11 +107,17 @@ class SRModel(BaseModel):
         self.optimizer_G.zero_grad()
         self.fake_H = self.netG(self.var_L)
         l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
-        l_pix.backward()
+        loss = l_pix
+        if self.cri_per is not None:
+            l_per = self.l_per_w * sum(self.cri_per(self.fake_H, self.real_H).values())
+            loss += l_per
+        loss.backward()
         self.optimizer_G.step()
 
         # set log
         self.log_dict['l_pix'] = l_pix.item()
+        if self.cri_per is not None:
+            self.log_dict['l_per'] = l_per.item()
 
     def test(self):
         self.netG.eval()

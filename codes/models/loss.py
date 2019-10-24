@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from models.perceptual_model import vgg16_bn
 
 
 class CharbonnierLoss(nn.Module):
@@ -71,4 +72,27 @@ class GradientPenaltyLoss(nn.Module):
         grad_interp_norm = grad_interp.norm(2, dim=1)
 
         loss = ((grad_interp_norm - 1)**2).mean()
+        return loss
+
+
+class PerceptualLoss(nn.Module):
+    def __init__(self, model_name, model_path, feature_name, criterion=nn.MSELoss()):
+        super(PerceptualLoss, self).__init__()
+        self.model_dict = {'vgg16_bn': vgg16_bn}
+        if model_name in self.model_dict.keys():
+            self.model = self.model_dict[model_name]()
+        else:
+            raise KeyError('invalid model_name: {}'.format(model_name))
+
+        self.model.load_state_dict(torch.load(model_path), strict=True)
+        self.model.eval()
+        self.feature_name = feature_name
+        self.criterion = criterion
+
+    def forward(self, input, target):
+        loss = {}
+        input_feature = self.model.forward_feature(input, self.feature_name)
+        target_feature = self.model.forward_feature(target, self.feature_name)
+        for name, i, t in zip(self.feature_name, input_feature, target_feature):
+            loss[name] = self.criterion(i, t)
         return loss
