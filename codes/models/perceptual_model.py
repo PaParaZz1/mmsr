@@ -2,11 +2,9 @@ import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 import math
 
-
 __all__ = [
-    'vgg16_bn',
+    'vgg16_bn', 'vgg16_bn_avg',
 ]
-
 
 model_urls = {
     'vgg11': 'https://download.pytorch.org/models/vgg11-bbd30ac9.pth',
@@ -27,7 +25,6 @@ class IPerceptualModel(object):
 
 
 class VGG(nn.Module, IPerceptualModel):
-
     def __init__(self, features, num_classes=1000):
         super(VGG, self).__init__()
         self.features = features
@@ -56,10 +53,7 @@ class VGG(nn.Module, IPerceptualModel):
         def hook(module, act_in, act_out):
             features.append(act_out)
 
-        feature_dict = {'relu1_2': '5',
-                        'relu2_2': '12',
-                        'relu3_3': '22',
-                        'relu4_3': '32'}
+        feature_dict = {'relu1_2': '5', 'relu2_2': '12', 'relu3_3': '22', 'relu4_3': '32'}
         for name in feature_name:
             handles.append(getattr(self.features, feature_dict[name]).register_forward_hook(hook))
 
@@ -83,12 +77,16 @@ class VGG(nn.Module, IPerceptualModel):
                 m.bias.data.zero_()
 
 
-def make_layers(cfg, batch_norm=False):
+def make_layers(cfg, batch_norm=False, pool_type=None):
+    assert(pool_type in ['max', 'avg'])
     layers = []
     in_channels = 3
     for v in cfg:
         if v == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+            if pool_type == 'max':
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+            elif pool_type == 'avg':
+                layers += [nn.AvgPool2d(kernel_size=2, stride=2)]
         else:
             conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
             if batch_norm:
@@ -103,8 +101,10 @@ cfg = {
     'A': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'B': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512,
-          512, 512, 'M'],
+    'E': [
+        64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512,
+        512, 'M'
+    ],
 }
 
 
@@ -174,9 +174,17 @@ def vgg16_bn(pretrained=False, **kwargs):
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = VGG(make_layers(cfg['D'], batch_norm=True), **kwargs)
+    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='max'), **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['vgg16_bn']))
+    return model
+
+
+def vgg16_bn_avg(**kwargs):
+    """VGG 16-layer model (configuration "D") with batch normalization and avg pool downsample
+
+    """
+    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='avg'), **kwargs)
     return model
 
 

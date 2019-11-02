@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models.perceptual_model import vgg16_bn
+from models.perceptual_model import vgg16_bn, vgg16_bn_avg
 
 
 class CharbonnierLoss(nn.Module):
@@ -78,7 +78,8 @@ class GradientPenaltyLoss(nn.Module):
 class PerceptualLoss(nn.Module):
     def __init__(self, model_name, model_path, feature_name, criterion=nn.MSELoss()):
         super(PerceptualLoss, self).__init__()
-        self.model_dict = {'vgg16_bn': vgg16_bn}
+        self.model_dict = {'vgg16_bn': vgg16_bn,
+                           'vgg16_bn_avg': vgg16_bn_avg}
         if model_name in self.model_dict.keys():
             self.model = self.model_dict[model_name]()
         else:
