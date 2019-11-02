@@ -104,13 +104,15 @@ class SRModel(BaseModel):
             self.real_H = data['GT'].to(self.device)  # GT
 
     def optimize_parameters(self, step):
+        loss_items = []
         self.optimizer_G.zero_grad()
         self.fake_H = self.netG(self.var_L)
         l_pix = self.l_pix_w * self.cri_pix(self.fake_H, self.real_H)
-        loss = l_pix
+        loss_items.append(l_pix)
         if self.cri_per is not None:
             l_per = self.l_per_w * sum(self.cri_per(self.fake_H, self.real_H).values())
-            loss += l_per
+            loss_items.append(l_per)
+        loss = sum(loss_items)
         loss.backward()
         self.optimizer_G.step()
 
