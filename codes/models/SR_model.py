@@ -52,7 +52,6 @@ class SRModel(BaseModel):
             if math.fabs(self.l_per_w) < 1e-6:
                 self.cri_per = None
             else:
-                print(perceptual_loss)
                 feature_criterion = perceptual_loss['feature_criterion']
                 if feature_criterion == 'l2':
                     criterion = nn.MSELoss().to(self.device)
@@ -62,7 +61,8 @@ class SRModel(BaseModel):
                 self.cri_per = PerceptualLoss(perceptual_loss['type'],
                                               perceptual_loss['model_path'],
                                               perceptual_loss['feature_name'],
-                                              criterion).to(self.device)
+                                              criterion,
+                                              perceptual_loss['kwargs']).to(self.device)
 
             # optimizers
             wd_G = train_opt['weight_decay_G'] if train_opt['weight_decay_G'] else 0

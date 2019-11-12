@@ -163,13 +163,15 @@ def vgg16(pretrained=False, **kwargs):
     return model
 
 
-def vgg16_bn(pretrained=False, **kwargs):
+def vgg16_bn(pretrained=False, model_kwargs=None):
     """VGG 16-layer model (configuration "D") with batch normalization
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='max'), **kwargs)
+    if model_kwargs is None:
+        model_kwargs = {}
+    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='max'), **model_kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['vgg16_bn']))
     return model
@@ -179,7 +181,9 @@ def vgg16_bn_avg(**kwargs):
     """VGG 16-layer model (configuration "D") with batch normalization and avg pool downsample
 
     """
-    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='avg'), **kwargs)
+    if model_kwargs is None:
+        model_kwargs = {}
+    model = VGG(make_layers(cfg['D'], batch_norm=True, pool_type='avg'), **model_kwargs)
     return model
 
 

@@ -76,14 +76,15 @@ class GradientPenaltyLoss(nn.Module):
 
 
 class PerceptualLoss(nn.Module):
-    def __init__(self, model_name, model_path, feature_name, criterion=nn.MSELoss()):
+    def __init__(self, model_name, model_path, feature_name, criterion=nn.MSELoss(), model_kwargs=None):
         super(PerceptualLoss, self).__init__()
-        self.model = build_perceptual_model(model_name)
+        self.model = build_perceptual_model(model_name, model_kwargs)
 
         self.model.load_state_dict(torch.load(model_path), strict=True)
         self.model.eval()
         self.feature_name = feature_name
         self.criterion = criterion
+        print(self.model)
 
     def forward(self, input, target):
         loss = {}
