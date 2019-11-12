@@ -2,7 +2,7 @@ import torch
 import models.archs.SRResNet_arch as SRResNet_arch
 import models.archs.discriminator_vgg_arch as SRGAN_arch
 import models.archs.RRDBNet_arch as RRDBNet_arch
-import models.archs.EDVR_arch as EDVR_arch
+#import models.archs.EDVR_arch as EDVR_arch
 
 
 # Generator
@@ -13,17 +13,18 @@ def define_G(opt):
     # image restoration
     if which_model == 'MSRResNet':
         netG = SRResNet_arch.MSRResNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
-                                       nf=opt_net['nf'], nb=opt_net['nb'], upscale=opt_net['scale'])
+                                       nf=opt_net['nf'], nb=opt_net['nb'], upscale=opt_net['scale'],
+                                       upsample_func=opt_net['upsample_func'])
     elif which_model == 'RRDBNet':
         netG = RRDBNet_arch.RRDBNet(in_nc=opt_net['in_nc'], out_nc=opt_net['out_nc'],
                                     nf=opt_net['nf'], nb=opt_net['nb'])
     # video restoration
-    elif which_model == 'EDVR':
-        netG = EDVR_arch.EDVR(nf=opt_net['nf'], nframes=opt_net['nframes'],
-                              groups=opt_net['groups'], front_RBs=opt_net['front_RBs'],
-                              back_RBs=opt_net['back_RBs'], center=opt_net['center'],
-                              predeblur=opt_net['predeblur'], HR_in=opt_net['HR_in'],
-                              w_TSA=opt_net['w_TSA'])
+    #elif which_model == 'EDVR':
+    #    netG = EDVR_arch.EDVR(nf=opt_net['nf'], nframes=opt_net['nframes'],
+    #                          groups=opt_net['groups'], front_RBs=opt_net['front_RBs'],
+    #                          back_RBs=opt_net['back_RBs'], center=opt_net['center'],
+    #                          predeblur=opt_net['predeblur'], HR_in=opt_net['HR_in'],
+    #                          w_TSA=opt_net['w_TSA'])
     else:
         raise NotImplementedError('Generator model [{:s}] not recognized'.format(which_model))
 

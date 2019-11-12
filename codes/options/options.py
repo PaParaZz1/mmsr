@@ -64,6 +64,8 @@ def parse(opt_path, is_train=True):
     # network
     if opt['distortion'] == 'sr':
         opt['network_G']['scale'] = scale
+    if 'upsample_func' not in opt['network_G'].keys():
+        opt['network_G']['upsample_func'] = 'pixel_shuffle'
 
     return opt
 
